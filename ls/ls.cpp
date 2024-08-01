@@ -139,6 +139,23 @@ std::wstring GetLastModifiedDate(const std::wstring& filePath) {
     return L"";
 }
 
+// Function to get the number of hardlinks for a given file
+DWORD GetHardLinkCount(const std::wstring& filePath) {
+    HANDLE hFile = CreateFileW(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
+
+    BY_HANDLE_FILE_INFORMATION fileInfo;
+    if (GetFileInformationByHandle(hFile, &fileInfo)) {
+        CloseHandle(hFile);
+        return fileInfo.nNumberOfLinks;
+    }
+
+    CloseHandle(hFile);
+    return 0;
+}
+
 bool DirectoryHasParent(const std::wstring& path) {
     DWORD attributes = GetFileAttributesW(path.c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -244,11 +261,13 @@ void ListDirectory(
             auto ownerAndGroup = GetOwnerAndGroup(fullPath);
             std::wstring fileSize = GetFileSizeString(fullPath, humanReadable);
             std::wstring lastModified = GetLastModifiedDate(fullPath);
+            DWORD hardLinkCount = GetHardLinkCount(fullPath);
 
             if (fileAttributes != INVALID_FILE_ATTRIBUTES && (fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 // Set color to blue for directories
                 SetConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE); // White for non-filename part
-                std::wcout << std::wstring(permissions.begin(), permissions.end()) << L" ";
+                std::wcout << std::wstring(permissions.begin(), permissions.end()) << L" "
+                    << hardLinkCount << L" ";
                 if (!excludeOwner) {
                     std::wcout << ownerAndGroup.first << L" ";
                 }
@@ -273,7 +292,8 @@ void ListDirectory(
                 }
 
                 SetConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE); // White for non-filename part
-                std::wcout << std::wstring(permissions.begin(), permissions.end()) << L" ";
+                std::wcout << std::wstring(permissions.begin(), permissions.end()) << L" "
+                    << hardLinkCount << L" ";
                 if (!excludeOwner) {
                     std::wcout << ownerAndGroup.first << L" ";
                 }
