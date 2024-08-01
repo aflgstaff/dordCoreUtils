@@ -1,6 +1,9 @@
 #include <windows.h>
 #include <iostream>
 
+// The program that started this project, a barebones reboot port from UNIX.
+// Written by afstaff 8/1/2024
+
 bool RestartComputer() {
     HANDLE hToken;
     TOKEN_PRIVILEGES tkp;
